@@ -1,71 +1,55 @@
-# ==============================
 # Librerías
-# ==============================
 library(jsonlite)
 
-# ==============================
 # Directorio de trabajo
-# ==============================
 getwd()
 
-# ==============================
 # Descargar y cargar JSON
-# ==============================
 url <- "https://www.bilbao.eus/aytoonline/jsp/opendata/movilidad/od_sonometro_mediciones.jsp?idioma=c&formato=json"
 
 # Leer JSON desde la web
-sonometros_mediciones <- fromJSON(url)
+datos_json <- fromJSON(url)
 
-# ==============================
+# revisar nulos
+colSums(is.na(datos_json)) 
+
 # Comprobación inicial
-# ==============================
-# Ver nulos
-colSums(is.na(sonometros_mediciones))
+str(datos_json)
+head(datos_json)
 
-# Revisar tipos de datos
-str(sonometros_mediciones)
-head(sonometros_mediciones)
-
-# ==============================
-# Limpieza y transformación
-# ==============================
-# Convertir decibelios a numérico
-sonometros_mediciones$decibelios <- as.numeric(sonometros_mediciones$decibelios)
-
-# Convertir fecha a datetime
-sonometros_mediciones$fecha_medicion <- as.POSIXct(
-  sonometros_mediciones$fecha_medicion,
-  format = "%Y-%m-%d %H:%M:%OS"
+# Crear un dataframe limpio
+sonometros_df <- data.frame(
+  Codigo = datos_json$nombre_dispositivo,
+  Decibelios = as.numeric(datos_json$decibelios),
+  FechaHora = as.POSIXct(datos_json$fecha_medicion, format="%Y-%m-%d %H:%M:%OS"),
+  stringsAsFactors = FALSE
 )
 
-# Extraer hora y día de la semana
-sonometros_mediciones$Hora <- format(sonometros_mediciones$fecha_medicion, "%H")
-sonometros_mediciones$Dia <- weekdays(sonometros_mediciones$fecha_medicion)
+# Extraer información adicional
+sonometros_df$Hora <- format(sonometros_df$FechaHora, "%H")   # hora del día
+sonometros_df$Dia <- weekdays(sonometros_df$FechaHora)        # día de la semana
 
-# ==============================
-# Estadísticas básicas del ruido
-# ==============================
-summary(sonometros_mediciones$decibelios)
-sd(sonometros_mediciones$decibelios)
+# Estadísticas básicas del ruido (Minimo| 1st cuartil| Mediana| Media|
+summary(sonometros_df$Decibelios)
 
-# ==============================
-# Visualización inicial
-# ==============================
-# Histograma del ruido
-hist(sonometros_mediciones$decibelios,
+# La desviación estándar, que indica cuánto varían los niveles de ruido respecto a la media.
+sd(sonometros_df$Decibelios)
+
+# Visualización
+# Histograma
+hist(sonometros_df$Decibelios,
      main="Distribución de niveles de ruido",
      xlab="Decibelios (dB)",
      col="skyblue",
      breaks=30)
 
 # Boxplot por sonómetro
-boxplot(decibelios ~ nombre_dispositivo, data=sonometros_mediciones,
+boxplot(Decibelios ~ Codigo, data=sonometros_df,
         main="Nivel de ruido por sonómetro",
         xlab="Sonómetro",
         ylab="Decibelios (dB)",
-        las=2, col="lightgreen")
+        las=2,
+        col="lightgreen")
 
-# ==============================
 # Resultado final
-# ==============================
-sonometros_mediciones
+head(sonometros_df)
