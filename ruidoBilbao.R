@@ -1,48 +1,71 @@
-# Mirar en que directotio estamos 
+# ==============================
+# Librerías
+# ==============================
+library(jsonlite)
+
+# ==============================
+# Directorio de trabajo
+# ==============================
 getwd()
 
-# importar .csv
-sonometros_mediciones <- read.csv("sonometros_mediciones.csv",header = TRUE,sep = ";",stringsAsFactors = FALSE)
-sonometros_mediciones
+# ==============================
+# Descargar y cargar JSON
+# ==============================
+url <- "https://www.bilbao.eus/aytoonline/jsp/opendata/movilidad/od_sonometro_mediciones.jsp?idioma=c&formato=json"
 
-# Comprobar si hay nulos
+# Leer JSON desde la web
+sonometros_mediciones <- fromJSON(url)
+
+# ==============================
+# Comprobación inicial
+# ==============================
+# Ver nulos
 colSums(is.na(sonometros_mediciones))
 
-# Revisar los tipos de datos
+# Revisar tipos de datos
 str(sonometros_mediciones)
 head(sonometros_mediciones)
 
-# Convertir la columna Fecha.Hora.medicion a datetime
-sonometros_mediciones$Fecha.Hora.medicion <- as.POSIXct(
-  sonometros_mediciones$Fecha.Hora.medicion,
+# ==============================
+# Limpieza y transformación
+# ==============================
+# Convertir decibelios a numérico
+sonometros_mediciones$decibelios <- as.numeric(sonometros_mediciones$decibelios)
+
+# Convertir fecha a datetime
+sonometros_mediciones$fecha_medicion <- as.POSIXct(
+  sonometros_mediciones$fecha_medicion,
   format = "%Y-%m-%d %H:%M:%OS"
 )
 
-# Extraer hora y día de la semana (muy útil para análisis de ruido)
-# Hora del día
-sonometros_mediciones$Hora <- format(sonometros_mediciones$Fecha.Hora.medicion, "%H")
+# Extraer hora y día de la semana
+sonometros_mediciones$Hora <- format(sonometros_mediciones$fecha_medicion, "%H")
+sonometros_mediciones$Dia <- weekdays(sonometros_mediciones$fecha_medicion)
 
-# Día de la semana
-sonometros_mediciones$Dia <- weekdays(sonometros_mediciones$Fecha.Hora.medicion)
+# ==============================
+# Estadísticas básicas del ruido
+# ==============================
+summary(sonometros_mediciones$decibelios)
+sd(sonometros_mediciones$decibelios)
 
-# Estadísticas básicas del ruido (Minimo| 1st cuartil| Mediana| Media| 3rd cuartil| Maximo )
-summary(sonometros_mediciones$Decibelios.medidos)
-# La desviación estándar, que indica cuánto varían los niveles de ruido respecto a la media.
-sd(sonometros_mediciones$Decibelios.medidos)
-
+# ==============================
 # Visualización inicial
-
+# ==============================
 # Histograma del ruido
-hist(sonometros_mediciones$Decibelios.medidos,
+hist(sonometros_mediciones$decibelios,
      main="Distribución de niveles de ruido",
      xlab="Decibelios (dB)",
      col="skyblue",
      breaks=30)
 
-#Boxplot por sonómetro
-boxplot(Decibelios.medidos ~ Codigo, data=sonometros_mediciones,
+# Boxplot por sonómetro
+boxplot(decibelios ~ nombre_dispositivo, data=sonometros_mediciones,
         main="Nivel de ruido por sonómetro",
         xlab="Sonómetro",
         ylab="Decibelios (dB)",
         las=2, col="lightgreen")
 
+# ==============================
+# Resultado final
+# ==============================
+sonometros_mediciones
