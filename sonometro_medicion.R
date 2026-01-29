@@ -5,6 +5,7 @@ library(jsonlite)
 getwd()
 
 # Sonometro_mediciones
+
 # Descargar y cargar JSON
 url_sonometro_mediciones <- "https://www.bilbao.eus/aytoonline/jsp/opendata/movilidad/od_sonometro_mediciones.jsp?idioma=c&formato=json"
 
@@ -60,4 +61,3 @@ boxplot(Decibelios ~ Codigo, data=sonometros_mediciones_df,
         ylab="Decibelios (dB)",
         las=2,
         col="lightgreen")
-
