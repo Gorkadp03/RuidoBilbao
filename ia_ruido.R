@@ -180,9 +180,9 @@ sonometros_final <- sonometros_final %>%
 sonometros_final <- sonometros_final %>%
   drop_na(Ocupacion, Intensidad, Velocidad)
 
-# --- PASO 5: GUARDAR EL DATASET FINAL INTEGRADO ---
+sonometros_final<-drop_na(sonometros_final)
 
-
+sum(is.na(sonometros_final))
 
 ############################ UNIÓN FINAL: RUIDO Y TRÁFICO ############################
 
