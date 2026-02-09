@@ -2,8 +2,7 @@ library(sf)
 library(dplyr)
 
 # 1. Definir el directorio de trabajo
-# Si el script está en la misma carpeta que los archivos, usa getwd().
-# Si no, cambia la ruta aquí, ejemplo: setwd("C:/MisDocumentos/DatosTrafico")
+setwd("C:/Users/iabd/Desktop/RuidoBilbao/traficoGEOJSON")
 directorio <- getwd()
 
 # 2. Listar todos los archivos .geojson
