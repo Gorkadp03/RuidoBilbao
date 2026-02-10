@@ -9,7 +9,7 @@ library(ggplot2)
 
 # Directorio de trabajo
 setwd("C:/Users/iabd/Desktop/RuidoBilbao")
-directorio <- getwd()
+getwd()
 
 ############################ SONÓMETRO: MEDICIONES ############################
 
@@ -166,80 +166,38 @@ trafico_sf_clean <- trafico_sf %>%
 
 # --- PASO 3: Join Directo (Más rápido y ligero) ---
 # Ahora unimos por CALLE y por HORA APROXIMADA a la vez.
-sonometros_final <- sonometros_sf %>%
-  inner_join(trafico_sf_clean, 
-             by = c("CodigoSeccion" = "CodigoSeccion", 
-                    "Clave_Tiempo" = "Clave_Tiempo"))
-
-# --- PASO 4: Verificación y Limpieza ---
-# Calculamos la diferencia real para asegurarnos
-sonometros_final <- sonometros_final %>%
-  mutate(Dif_Minutos_Real = abs(as.numeric(difftime(FechaHora, FechaHora_trafico, units = "mins"))))
-
-# Limpieza final de nulos en datos de tráfico
-sonometros_final <- sonometros_final %>%
-  drop_na(Ocupacion, Intensidad, Velocidad)
-
-sonometros_final<-drop_na(sonometros_final)
-
-sum(is.na(sonometros_final))
-
-############################ UNIÓN FINAL: RUIDO Y TRÁFICO ############################
-
-# --- PASO 1: Encontrar la calle (Tramo) más cercana a cada sonómetro ---
-# Preparamos los tramos de tráfico únicos (solo para calcular distancias)
-trafico_tramos_unicos <- trafico_sf %>% 
-  distinct(CodigoSeccion, .keep_all = TRUE) %>% 
-  select(CodigoSeccion, geometry)
-
-# Buscamos el índice del tramo más cercano para cada sonómetro
-# Usamos 'sonometros_sf' que es tu variable correcta
-idx <- st_nearest_feature(sonometros_sf, trafico_tramos_unicos)
-
-# Asignamos el ID de la calle (CodigoSeccion) al sonómetro
-sonometros_sf$CodigoSeccion <- trafico_tramos_unicos$CodigoSeccion[idx]
-
-# --- PASO 2: Sincronización Temporal (Redondeo a 15 min) ---
-# Redondeamos la hora del SONÓMETRO
-sonometros_sf <- sonometros_sf %>%
-  mutate(Clave_Tiempo = round_date(FechaHora, unit = "15 minutes"))
-
-# Redondeamos la hora del TRÁFICO y preparamos la tabla para el cruce
-# Usamos st_drop_geometry() para aligerar antes del join
-trafico_sf_clean <- trafico_sf %>%
-  st_drop_geometry() %>% 
-  mutate(Clave_Tiempo = round_date(FechaHora_trafico, unit = "15 minutes")) %>%
-  distinct(CodigoSeccion, Clave_Tiempo, .keep_all = TRUE) # Evitar duplicados
-
-# --- PASO 3: Join Definitivo (Espacial + Temporal) ---
-# Unimos por: Mismo tramo de calle (CodigoSeccion) Y Mismo momento (Clave_Tiempo)
 dataset_final <- sonometros_sf %>%
   inner_join(trafico_sf_clean, 
              by = c("CodigoSeccion" = "CodigoSeccion", 
                     "Clave_Tiempo" = "Clave_Tiempo"))
 
-# --- PASO 4: Limpieza y Validación ---
-# (Opcional) Calculamos la diferencia real en minutos
-dataset_final <- dataset_final %>%
-  mutate(Dif_Minutos_Real = abs(as.numeric(difftime(FechaHora, FechaHora_trafico, units = "mins"))))
-
-# Eliminamos filas que no tengan datos de tráfico válidos (nulos)
+# Limpieza final de nulos en datos de tráfico
 dataset_final <- dataset_final %>%
   drop_na(Ocupacion, Intensidad, Velocidad)
+
+# dataset_final<-drop_na(dataset_final)
+
+sum(is.na(dataset_final))
+
+# Verificamos el resultado
+print(paste("Filas totales:", nrow(dataset_final)))
+sum(is.na(dataset_final))
+head(dataset_final)
 
 ###########################################
 # --- PASO 5: EXPORTAR SOLO A CSV (PARA POWER BI) ---
 
 # Preparamos la tabla quitando la columna "geometry" que molesta en el CSV
 dataset_exportado <- dataset_final %>%
-  st_drop_geometry()
+ st_drop_geometry()
+
+sum(is.na(dataset_exportado))
 
 # Guardamos el archivo CSV definitivo con el nombre que pediste
-write.csv(dataset_exportado, "dataset_exportado.csv", row.names = FALSE, fileEncoding = "UTF-8")
+write.csv(dataset_exportado, "dataset_exportado.csv", row.names = FALSE)
 
 # Verificamos las primeras filas
 head(dataset_exportado)
-
 
 ############################## Analisis exploratorio ############################
 
